@@ -19,7 +19,7 @@ scissors_img = pygame.image.load('scissors_emoji.png')
 # Item properties
 item_size = 20
 num_items = 25
-move_speed = 2
+move_speed = 1
 attraction_strength = 0.05
 max_speed = 3
 
@@ -138,3 +138,4 @@ while running:
 # Quit Pygame
 pygame.quit()
 sys.exit()
+
