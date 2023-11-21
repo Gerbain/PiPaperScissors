@@ -48,12 +48,19 @@ def rps_winner(item1, item2):
     else:
         return item2
 
-# Generate random items with random movement directions
+# Arena boundaries
+arena_margin = 50
+left_bound = arena_margin
+right_bound = screen_width - arena_margin - item_size
+top_bound = arena_margin
+bottom_bound = screen_height - arena_margin - item_size
+
+# Generate random items with random movement directions, within arena bounds
 items = []
 for _ in range(num_items):
     item_type = random.choice(["rock", "paper", "scissors"])
-    x = random.randint(0, screen_width - item_size)
-    y = random.randint(0, screen_height - item_size)
+    x = random.randint(left_bound, right_bound)
+    y = random.randint(top_bound, bottom_bound)
     x_move = random.choice([-move_speed, move_speed])
     y_move = random.choice([-move_speed, move_speed])
     items.append([item_type, x, y, x_move, y_move])
@@ -64,13 +71,17 @@ def calculate_attraction(item1, item2):
     dy = item2[2] - item1[2]
     distance = max(abs(dx), abs(dy), 1)  # Prevent division by zero
 
+    # Attraction adjustment near edges
+    edge_proximity = 50  # Distance from edge to start reducing attraction
+    edge_reduction_factor = 0.5 if min(item1[1], item1[2], screen_width - item1[1], screen_height - item1[2]) < edge_proximity else 1
+
     # Only consider attraction for similar items and within a certain range
     if item1[0] == item2[0] and distance < 100:
         # Reduce or reverse attraction if too close
         if distance < item_size * 2:
-            return -dx / distance * attraction_strength, -dy / distance * attraction_strength
+            return -dx / distance * attraction_strength * edge_reduction_factor, -dy / distance * attraction_strength * edge_reduction_factor
         else:
-            return dx / distance * attraction_strength, dy / distance * attraction_strength
+            return dx / distance * attraction_strength * edge_reduction_factor, dy / distance * attraction_strength * edge_reduction_factor
 
     return 0, 0
 
@@ -88,13 +99,6 @@ def render_text(message, font_size, color, x, y):
     text = font.render(message, True, color)
     text_rect = text.get_rect(center=(x, y))
     screen.blit(text, text_rect)
-
-# Arena boundaries
-arena_margin = 50
-left_bound = arena_margin
-right_bound = screen_width - arena_margin - item_size
-top_bound = arena_margin
-bottom_bound = screen_height - arena_margin - item_size
 
 # Variable to store the winning type
 winner_type = None
@@ -127,9 +131,14 @@ while running:
         # Cap the speed
         item1[3], item1[4] = cap_speed(item1[3], item1[4], max_speed)
 
-        # Update x and y position within arena bounds
-        item1[1] = min(max(item1[1] + item1[3], left_bound), right_bound)
-        item1[2] = min(max(item1[2] + item1[4], top_bound), bottom_bound)
+        # Enhanced edge bounce logic
+        if item1[1] + item1[3] < left_bound or item1[1] + item1[3] > right_bound:
+            item1[3] = -item1[3]
+        item1[1] += item1[3]
+
+        if item1[2] + item1[4] < top_bound or item1[2] + item1[4] > bottom_bound:
+            item1[4] = -item1[4]
+        item1[2] += item1[4]
 
         # Draw item
         screen.blit(ITEM_IMAGES[item1[0]], (item1[1], item1[2]))
