@@ -11,6 +11,10 @@ screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 pygame.display.set_caption('Rock Paper Scissors Game')
 
+# Load background image
+background_img = pygame.image.load('background_image.png')
+background_img = pygame.transform.scale(background_img, (screen_width, screen_height))
+
 # Load emoji images
 rock_img = pygame.image.load('rock_emoji.png')
 paper_img = pygame.image.load('paper_emoji.png')
@@ -19,7 +23,7 @@ scissors_img = pygame.image.load('scissors_emoji.png')
 # Item properties
 item_size = 20
 num_items = 25
-move_speed = 1
+move_speed = 2
 attraction_strength = 0.05
 max_speed = 3
 
@@ -78,6 +82,23 @@ def cap_speed(x_move, y_move, max_speed):
         return x_move * scale, y_move * scale
     return x_move, y_move
 
+# Function to render text
+def render_text(message, font_size, color, x, y):
+    font = pygame.font.SysFont(None, font_size)
+    text = font.render(message, True, color)
+    text_rect = text.get_rect(center=(x, y))
+    screen.blit(text, text_rect)
+
+# Arena boundaries
+arena_margin = 50
+left_bound = arena_margin
+right_bound = screen_width - arena_margin - item_size
+top_bound = arena_margin
+bottom_bound = screen_height - arena_margin - item_size
+
+# Variable to store the winning type
+winner_type = None
+
 # Main game loop
 running = True
 while running:
@@ -85,8 +106,8 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-    # Clear screen
-    screen.fill((0, 0, 0))
+    # Draw background
+    screen.blit(background_img, (0, 0))
 
     # Move and draw items
     for i, item1 in enumerate(items):
@@ -106,15 +127,9 @@ while running:
         # Cap the speed
         item1[3], item1[4] = cap_speed(item1[3], item1[4], max_speed)
 
-        # Update x and y position
-        item1[1] += item1[3]
-        item1[2] += item1[4]
-
-        # Bounce off the edges
-        if item1[1] < 0 or item1[1] > screen_width - item_size:
-            item1[3] = -item1[3]
-        if item1[2] < 0 or item1[2] > screen_height - item_size:
-            item1[4] = -item1[4]
+        # Update x and y position within arena bounds
+        item1[1] = min(max(item1[1] + item1[3], left_bound), right_bound)
+        item1[2] = min(max(item1[2] + item1[4], top_bound), bottom_bound)
 
         # Draw item
         screen.blit(ITEM_IMAGES[item1[0]], (item1[1], item1[2]))
@@ -132,10 +147,23 @@ while running:
                     elif item2[0] != winner:
                         item2[0] = winner
 
+    # Check for a winner if not already determined
+    if not winner_type:
+        types = set(item[0] for item in items)
+        if len(types) == 1:
+            winner_type = types.pop()
+
     # Update the display
     pygame.display.flip()
+
+    # If there's a winner, display the winning message
+    if winner_type:
+        screen.fill((0, 0, 0))  # Optional: Clear the screen
+        render_text(f"{winner_type.upper()} WINS!", 60, (255, 255, 255), screen_width // 2, screen_height // 2)
+        pygame.display.flip()
+        pygame.time.wait(3000)  # Wait for 3 seconds before closing
+        break
 
 # Quit Pygame
 pygame.quit()
 sys.exit()
-
